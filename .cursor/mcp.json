@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "myCalendarData": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}\\server.js"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "GOOGLE_PUBLIC_API_KEY": "AIzaSyDUT0r8LWZoCffql9tolPOnwhWhW5Tmypk",
+        "CALENDAR_ID": "theaicircle03@gmail.com"
+      }
+    }
+  }
+}
