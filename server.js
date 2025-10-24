@@ -1,18 +1,20 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { HttpServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
 import dotenv from "dotenv";
 import { google } from "googleapis";
 import { z } from "zod";
+import express from "express"; // <-- Express import করুন
 
 dotenv.config();
 
-// create the MCP server
+// create the MCP server (এই অংশ অপরিবর্তিত)
 const server = new McpServer({
     name: "Sumit's Calendar",
     version: "1.0.0",
 });
 
-// tool function
+// tool function (এই অংশ অপরিবর্তিত)
 async function getMyCalendarDataByDate(date) {
     const calendar = google.calendar({
         version: "v3",
@@ -57,7 +59,7 @@ async function getMyCalendarDataByDate(date) {
     }
 }
 
-// register the tool to MCP
+// register the tool to MCP (এই অংশ অপরিবর্তিত)
 server.tool(
     "getMyCalendarDataByDate",
     {
@@ -77,11 +79,40 @@ server.tool(
     }
 );
 
-// set transfort
+// --- init() ফাংশনটি পরিবর্তন করুন ---
+// set transport
 async function init() {
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
+    // চেক করুন TRANSPORT_MODE=http সেট করা আছে কি না
+    if (process.env.TRANSPORT_MODE === "http") {
+        // --- HTTP মোড (Vercel / ChatGPT-এর জন্য) ---
+        console.log("Starting in HTTP mode...");
+        const app = express();
+        const port = process.env.PORT || 3000;
+        
+        const transport = new HttpServerTransport({
+            app: app,
+            path: "/mcp", // এই URL-এ আপনার MCP সার্ভারটি চলবে
+        });
+        await server.connect(transport);
+        
+        app.listen(port, () => {
+            console.log(`MCP server listening at http://localhost:${port}/mcp`);
+        });
+        // Vercel-এর জন্য এটি দরকার
+        return app; 
+
+    } else {
+        // --- Stdio মোড (Cursor-এর জন্য ডিফল্ট) ---
+        console.log("Starting in Stdio mode for local Cursor...");
+        const transport = new StdioServerTransport();
+        await server.connect(transport);
+        // Stdio মোডে app রিটার্ন করার দরকার নেই
+        return null; 
+    }
 }
 
 // call the initialization
-init();
+const app = await init();
+
+// Vercel-এর জন্য ডিফল্ট এক্সপোর্ট
+export default app;
